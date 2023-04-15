@@ -34,12 +34,11 @@ function main() {
 }
 
 */
-const canvasRatio = 5;//window.devicePixelRatio;
+const canvasRatio = 5; //window.devicePixelRatio;
 var isMousedown = false;
 var isMouseMoved = false;
 var isCtrlDown = false;
 var mousePrevPos = [0,0];
-var pixelArray = [];
 
 
 const PensilTool = (function() {
