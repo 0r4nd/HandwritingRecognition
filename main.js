@@ -36,6 +36,7 @@ function main() {
 */
 const canvasRatio = 5;//window.devicePixelRatio;
 var isMousedown = false;
+var isMouseMoved = false;
 var isCtrlDown = false;
 var mousePrevPos = [0,0];
 var pixelArray = [];
@@ -58,7 +59,7 @@ const PensilTool = (function() {
       this.pointsArray.pop();
     }
     if (this.pointsArray.length == 1) {
-      this.pointsArray[0] = [];
+      this.pointsArray = [[]];
     } else if (this.pointsArray.length > 0) {
       this.pointsArray.pop();
     }
@@ -136,12 +137,16 @@ function game_animate(manager) {
     var pts = pointsArray[i];
     if (pts.length > 1) {
       for (var j = 0; j < pts.length-1; j++) {
-        var x1 = Math.floor(pts[j][0] / canvasRatio)
-        var y1 = Math.floor(pts[j][1] / canvasRatio)
-        var x2 = Math.floor(pts[j+1][0] / canvasRatio)
-        var y2 = Math.floor(pts[j+1][1] / canvasRatio)
+        var x1 = Math.floor(pts[j][0] / canvasRatio);
+        var y1 = Math.floor(pts[j][1] / canvasRatio);
+        var x2 = Math.floor(pts[j+1][0] / canvasRatio);
+        var y2 = Math.floor(pts[j+1][1] / canvasRatio);
         this.canvas.drawBresenhamLine(x1,y1, x2,y2, 1);
       }
+    } else if (pts.length == 1) {
+      var x = Math.floor(pts[0][0] / canvasRatio);
+      var y = Math.floor(pts[0][1] / canvasRatio);
+      this.canvas.drawPixel(x,y, 1);
     }
   }
   this.canvas.draw(this.canvasElem);
@@ -175,25 +180,31 @@ function main() {
   manager.elementEvent['mousemove'].add(event => {
     var xy = manager.getMouseCoords(event);
     if (isMousedown && (mousePrevPos[0]!=xy[0] && mousePrevPos[1]!=xy[1])) {
-      console.log("ajout")
       drawingTools.pensil.addPoint(xy[0],xy[1]);
       mousePrevPos[0] = xy[0];
       mousePrevPos[1] = xy[1];
+      isMouseMoved = true;
     }
     //console.log(event)
   });
-  manager.elementEvent['mouseup'].add(e => {
+  manager.elementEvent['mouseup'].add(event => {
+    if (isMouseMoved == false) {
+      var xy = manager.getMouseCoords(event);
+      drawingTools.pensil.addPoint(xy[0],xy[1]);
+    }
+    isMouseMoved = false;
     isMousedown = false;
-    drawingTools.pensil.addId();
   });
-  manager.elementEvent['mousedown'].add(e => {
+  manager.elementEvent['mousedown'].add(event => {
+    drawingTools.pensil.addId();
+    isMouseMoved = false;
     isMousedown = true;
   });
 
   manager.documentEvent['keydown'].add(event => {
     switch (event.key) {
       case "a":
-        console.log(drawingTools.pensil.pointsArray);
+        console.dir(drawingTools.pensil.pointsArray);
         break;
       case "Control":
         isCtrlDown = true;
@@ -205,7 +216,6 @@ function main() {
         break;
       case "y":
         if (isCtrlDown) {
-          console.log("Ctrl+y")
         }
         break;
       default:
