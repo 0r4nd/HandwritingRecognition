@@ -64,28 +64,20 @@ const PensilTool = (function() {
     } else if (this.points.length > 0) {
       var arr = this.points.pop()
       this.pointsDeleted.push(arr);
-      console.warn(this.pointsDeleted)
     }
 
   };
-
   PensilTool.prototype.ctrlY = function() {
-    if (this.pointsDeleted.length > 0 && this.pointsDeleted[this.pointsDeleted.length-1] > 0) {
-      this.points.push(this.pointsDeleted.pop());
+    if (this.pointsDeleted.length > 0) {
+      this.points.push(this.pointsDeleted.pop())
     }
   };
-
   PensilTool.prototype.reset = function() {
     this.points = [[]];
   };
-
   return PensilTool;
 })();
 
-
-const drawingTools = {
-  pensil: new PensilTool(),
-};
 
 
 // '#0000AA' -> 0xAA0000
@@ -96,6 +88,14 @@ function irand(min, max) {
   max = Math.floor(max);
   return Math.floor(Math.random() * (max - min) + min);
 }
+
+
+
+
+
+const drawingTools = {
+  pensil: new PensilTool(),
+};
 
 
 // the local 'this' context is manager.customData object!
@@ -188,10 +188,6 @@ function main() {
     console.log("Pause");
   });
 
-  function getMouseCoords(elem, event) {
-    var rect = elem.getBoundingClientRect();
-    return [event.clientX - rect.left, event.clientY - rect.top];
-  }
 
   manager.elementEvent['mousemove'].add(event => {
     var xy = manager.getMouseCoords(event);
@@ -201,8 +197,9 @@ function main() {
       mousePrevPos[1] = xy[1];
       isMouseMoved = true;
     }
-    //console.log(event)
   });
+
+
   manager.elementEvent['mouseup'].add(event => {
     if (isMouseMoved == false) {
       var xy = manager.getMouseCoords(event);
@@ -217,11 +214,9 @@ function main() {
     isMousedown = true;
   });
 
+
   manager.documentEvent['keydown'].add(event => {
     switch (event.key) {
-      case "a":
-        console.dir(drawingTools.pensil.points);
-        break;
       case "Control":
         isCtrlDown = true;
         break;
@@ -235,8 +230,6 @@ function main() {
           drawingTools.pensil.ctrlY();
         }
         break;
-      default:
-        return;
     }
   });
   manager.documentEvent['keyup'].add(event => {
@@ -244,13 +237,11 @@ function main() {
       case "Control":
         isCtrlDown = false;
         break;
-      default:
-        return;
     }
   });
 
   //manager.start();
-  manager.log('element');
+  //manager.log('element');
 }
 
 
