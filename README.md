@@ -4,4 +4,4 @@
 2. Formatting in classes with VisualStudioCode
 3. Model export -> conversion -> compression
 4. Use on browser with a js tool + tensorflowJS
-5. [Optional, not used here]: use on remote server with API + requests with pixels converted to Base64
+5. [Optional, not used here]: use on remote server with Docker API + requests with pixels converted to Base64
