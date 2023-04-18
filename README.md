@@ -5,3 +5,9 @@
 3. Model export -> conversion -> compression
 4. Use on browser with a js tool + tensorflowJS
 5. [Optional, not used here]: use on remote server with Docker API + requests with pixels converted to Base64
+
+
+# Implementation status
+- Classification ✅<br>
+- Localisation ⭕<br>
+- Multiple Objects ⭕<br>
