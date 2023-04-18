@@ -8,6 +8,6 @@
 
 
 # Implementation status
-- Classification ✅<br>
-- Localisation ⭕<br>
+- Single Classification ✅<br>
+- Single Localisation ⭕<br>
 - Multiple Objects ⭕<br>
