@@ -76,8 +76,33 @@ function clear_canvas(elem) {
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, elem.width, elem.height);
+  ctx.rect(0, 0, elem.width, elem.height);
+  ctx.fillStyle = "white";
+  ctx.fill();
   ctx.restore();
   return elem;
+}
+
+function getImageData_canvas(elem, width, height) {
+  var ctx = elem.getContext("2d");
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  var imageData = ctx.getImageData(0,0, width, height);
+  ctx.restore();
+  return imageData;
+}
+
+function imageDataToString(imageData) {
+  var w = imageData.width;
+  var h = imageData.height;
+  var str = "";
+  for (var j = 0; j < h; j++) {
+    for (var i = 0; i < w; i++) {
+      str += imageData.data[j*w*4 + i*4]? 1:0;
+    }
+    str += "\n"
+  }
+  return str;
 }
 
 
@@ -178,9 +203,10 @@ function game_init(manager) {
 function game_animate(manager) {
   var points = drawingTools.pensil.points;
   var ctx = this.canvasElem.getContext("2d");
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
+  //ctx.lineJoin = "round";
+  //ctx.lineCap = "round";
   ctx.lineWidth = 1;
+  ctx.imageSmoothingQuality = "high"
 
   clear_canvas(this.canvasElem);
 
@@ -211,17 +237,6 @@ function game_animate(manager) {
   }
 }
 
-
-/*
-ctx.beginPath();
-//ctx.lineWidth = 10;
-//ctx.lineJoin = "round";
-//ctx.lineCap = "round";
-ctx.moveTo(50,50);
-ctx.lineTo(100, 100);
-ctx.lineTo(150, 60);
-ctx.stroke();
-*/
 
 function main() {
   console.clear();
@@ -261,6 +276,12 @@ function main() {
     }
     isMouseMoved = false;
     isMousedown = false;
+    
+    var canvasElem = manager.customData.canvasElem;
+    var ctx = canvasElem.getContext("2d");
+    var imageData = getImageData_canvas(canvasElem, canvasWidth,canvasHeight);
+    console.clear()
+    console.log(imageDataToString(imageData))
   });
   manager.elementEvent['mousedown'].add(event => {
     drawingTools.pensil.addId();
