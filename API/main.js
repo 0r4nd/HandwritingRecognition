@@ -34,11 +34,12 @@ function main() {
 }
 
 */
-const canvasRatio = 5; //window.devicePixelRatio;
+const canvasRatio = 20; //window.devicePixelRatio;
 var isMousedown = false;
 var isMouseMoved = false;
 var isCtrlDown = false;
 var mousePrevPos = [0,0];
+
 
 
 const PensilTool = (function() {
@@ -65,7 +66,6 @@ const PensilTool = (function() {
       var arr = this.points.pop()
       this.pointsDeleted.push(arr);
     }
-
   };
   PensilTool.prototype.ctrlY = function() {
     if (this.pointsDeleted.length > 0) {
@@ -88,9 +88,27 @@ function irand(min, max) {
   max = Math.floor(max);
   return Math.floor(Math.random() * (max - min) + min);
 }
+function toFixed(x, count = 2) {
+  x = Math.floor(x * 100) / 100;
+  return x.toFixed(count);
+}
 
+function maxValIdx(arr) {
+  var maxIdx = 0;
+  for (var i = 1; i < arr.length; i++) {
+    if (arr[i] > arr[maxIdx]) maxIdx = i;
+  }
+  return maxIdx;
+}
 
-
+function clear_canvas(elem) {
+  var ctx = elem.getContext("2d");
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, elem.width, elem.height);
+  ctx.restore();
+  return elem;
+}
 
 
 const drawingTools = {
@@ -102,10 +120,80 @@ const drawingTools = {
 // we can pass our own data's throw AnimationFrameHandler functions
 function game_init(manager) {
 
+/*
+  // load TFLite model into browser
+  async function load_tflite_model() {
+    const tfliteModel = await tflite.loadTFLiteModel("assets/model_0000.tflite");
+    console.log("tfliteModel..", tfliteModel)
+  }
+  load_tflite_model();
+*/
+  var a = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]];
+
+
+  async function loadModel() {
+    //var model = await tf.loadLayersModel("https://github.com/0r4nd/HandwritingRecognition/blob/main/API/assets/model_0000/model.json");
+    var model = await tf.loadLayersModel("assets/model_0000/model.json");
+    var X = tf.tensor2d(a);
+    X = X.expandDims(-1);
+
+    //X.print()
+    //console.warn("")
+    //X.expandDims(0).print()
+    //tf.tensor(X.dataSync()).print()
+    //model.predict(X.expandDims(0))
+    var labels = [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+    ];
+
+
+    var output = model.predict(X.expandDims(0)).dataSync();
+    var idx = maxValIdx(output);
+    console.log(`Prediction is ${labels[idx]} with ${toFixed(output[idx]*100)}%`);
+    return model;
+  }
+  //this.model = loadModel();
+
   // Canvas Indexed 8bits buffer
   this.canvas = new CanvasPalBuffer({
-    width: 160,
-    height: 100,
+    width: 28,
+    height: 28,
   });
   this.canvas.palette[0] = cssToInt('#FFFFFF');
   this.canvas.palette[1] = cssToInt('#555555');
@@ -138,36 +226,53 @@ function game_init(manager) {
   ctx.scale(canvasRatio, canvasRatio);
 }
 
-
-
-
-// the local context is manager.customData object!
 function game_animate(manager) {
   var points = drawingTools.pensil.points;
-  var color = 1;
+  var ctx = this.canvasElem.getContext("2d");
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.lineWidth = 1;
+
+  clear_canvas(this.canvasElem);
+
   for (var i = 0; i < points.length; i++) {
     var pts = points[i];
     if (pts.length == 0) continue;
     var x1 = Math.floor(pts[0][0] / canvasRatio);
     var y1 = Math.floor(pts[0][1] / canvasRatio);
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
 
     // only a point
     if (pts.length == 1) {
-      this.canvas.drawPixel(x1,y1, color);
+      ctx.lineTo(x1,y1);
+      ctx.stroke();
       continue;
     } 
+
     // a line
     for (var j = 1; j < pts.length-1; j++) {
       var x2 = Math.floor(pts[j][0] / canvasRatio);
       var y2 = Math.floor(pts[j][1] / canvasRatio);
-      this.canvas.drawBresenhamLine(x1,y1, x2,y2, color);
+      ctx.lineTo(x2,y2);
       x1 = x2;
       y1 = y2;
     }
+    ctx.stroke();
   }
-  this.canvas.draw(this.canvasElem);
 }
 
+
+/*
+ctx.beginPath();
+//ctx.lineWidth = 10;
+//ctx.lineJoin = "round";
+//ctx.lineCap = "round";
+ctx.moveTo(50,50);
+ctx.lineTo(100, 100);
+ctx.lineTo(150, 60);
+ctx.stroke();
+*/
 
 function main() {
   console.clear();
