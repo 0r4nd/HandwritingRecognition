@@ -2,38 +2,8 @@
 "use strict";
 
 
-/*
-function main() {
-
-  // Define a model for linear regression. The script tag makes `tf` available
-  // as a global variable.
-  const model = tf.sequential();
-
-  model.add(tf.layers.dense({units: 1, inputShape: [1]}));
-
-  model.compile({
-    loss: 'meanSquaredError',
-    optimizer: 'sgd',
-    metrics: ['accuracy'],
-  });
-
-  // Generate some synthetic data for training.
-  const xs = tf.tensor2d([1, 2, 3, 4], [4, 1]);
-  const ys = tf.tensor2d([1, 3, 5, 7], [4, 1]);
-
-  model.fit(xs, ys, {
-    epochs: 100,
-    callbacks: {
-      onEpochEnd: (epoch, log) => console.log(`Epoch ${epoch}: loss = ${log.loss}`),
-      onBatchEnd: (batch, log) => console.log('Accuracy', log.acc),
-    },
-  });
-
-//tf.keras.models.model_to_json()
-
-}
-
-*/
+const canvasWidth = 28;
+const canvasHeight = 28;
 const canvasRatio = 20; //window.devicePixelRatio;
 var isMousedown = false;
 var isMouseMoved = false;
@@ -190,34 +160,13 @@ function game_init(manager) {
   }
   //this.model = loadModel();
 
-  // Canvas Indexed 8bits buffer
-  this.canvas = new CanvasPalBuffer({
-    width: 28,
-    height: 28,
-  });
-  this.canvas.palette[0] = cssToInt('#FFFFFF');
-  this.canvas.palette[1] = cssToInt('#555555');
-  this.canvas.palette[2] = cssToInt('#000000');
-  this.canvas.palette[3] = cssToInt('#5555FF');
-  this.canvas.palette[4] = cssToInt('#0000AA');
-  this.canvas.palette[5] = cssToInt('#55FF55');
-  this.canvas.palette[6] = cssToInt('#00AA00');
-  this.canvas.palette[7] = cssToInt('#55FFFF');
-  this.canvas.palette[8] = cssToInt('#00AAAA');
-  this.canvas.palette[9] = cssToInt('#FF5555');
-  this.canvas.palette[10] = cssToInt('#AA0000');
-  this.canvas.palette[11] = cssToInt('#FF55FF');
-  this.canvas.palette[12] = cssToInt('#AA00AA');
-  this.canvas.palette[13] = cssToInt('#FFFF55');
-  this.canvas.palette[14] = cssToInt('#AA5500');
-  this.canvas.palette[15] = cssToInt('#AAAAAA');
 
   // Canvas Element DOM
   var elem = document.getElementById("canvas");
   this.canvasElem = elem;
   var ctx = elem.getContext("2d");
-  elem.width  = this.canvas.width  * canvasRatio;
-  elem.height = this.canvas.height * canvasRatio;
+  elem.width  = canvasWidth  * canvasRatio;
+  elem.height = canvasHeight * canvasRatio;
   elem.style.width  = elem.width + "px";
   elem.style.height = elem.height + "px";
   elem.style.backgroundColor = "rgb(255,255,255)";
