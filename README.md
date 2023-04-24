@@ -11,3 +11,5 @@
 - Single Classification ✅<br>
 - Single Localisation ⭕<br>
 - Multiple Objects ⭕<br>
+
+# snapshoot API (using browser tfjs)
