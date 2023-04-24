@@ -9,7 +9,7 @@ var isMousedown = false;
 var isMouseMoved = false;
 var isCtrlDown = false;
 var mousePrevPos = [0,0];
-
+var model = undefined;
 
 
 const PensilTool = (function() {
@@ -87,7 +87,7 @@ function getImageData_canvas(elem, width, height) {
   var ctx = elem.getContext("2d");
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  var imageData = ctx.getImageData(0,0, width, height);
+  var imageData = ctx.getImageData(0,0, width||elem.width, height||elem.height);
   ctx.restore();
   return imageData;
 }
@@ -98,12 +98,110 @@ function imageDataToString(imageData) {
   var str = "";
   for (var j = 0; j < h; j++) {
     for (var i = 0; i < w; i++) {
-      str += imageData.data[j*w*4 + i*4]? 1:0;
+      str += imageData.data[j*w*4 + i*4]>128? 0:1;
     }
     str += "\n"
   }
   return str;
 }
+
+function imageDataToTensor(imageData) {
+  var w = imageData.width;
+  var h = imageData.height;
+  var arr3d = [];
+  for (var j = 0; j < h; j++) {
+    var arr = []
+    arr3d.push(arr);
+    for (var i = 0; i < w; i++) {
+      arr.push([imageData.data[j*w*4 + i*4]>127? 0:1]);
+    }
+  }
+  return tf.tensor3d(arr3d)/*.expandDims(-1)*/;
+}
+
+function copyStyle(elem, style) {
+  if (!style) return;
+  Object.keys(style).forEach((key,i) => {
+    elem.style[key] = style[key];
+  });
+}
+const mouseEventTypes = [
+  "onclick","oncontextmenu","ondblclick","onmousedown","onmouseenter",
+  "onmouseleave","onmousemove","onmouseout","onmouseover","onmouseup",
+];
+function copyMouseEventTypes(dst, src) {
+  for (var i = 0; i < mouseEventTypes.length; i++) {
+    var key = mouseEventTypes[i];
+    if (src[key]) dst[key] = src[key];
+  }
+}
+function commonDivReturn(elem, opts) {
+  var parent = opts.parent;
+  copyMouseEventTypes(elem, opts);
+  copyStyle(elem, opts.style);
+  if (!parent) parent = document.body;
+  parent.appendChild(elem);
+  return elem;
+}
+function createCanvas(opts = {}) {
+  const elem = document.createElement("canvas");
+  if (opts.id) elem.id = opts.id;
+  elem.width = opts.width;
+  elem.height = opts.height;
+  if (elem.style.zIndex === undefined) elem.style.zIndex = 1;
+  if (!elem.style.position) elem.style.position = "absolute";
+  return commonDivReturn(elem, opts);
+}
+function createButton(opts = {}) {
+  const elem = document.createElement("input");
+  elem.setAttribute("type", "button");
+  if (opts.id) elem.id = opts.id;
+  if (opts.class) elem.class = opts.class;
+  if (opts.value) elem.value = opts.value;
+  return commonDivReturn(elem, opts);
+}
+function createDiv(opts = {}) {
+  const elem = document.createElement("div");
+  if (opts.id) elem.id = opts.id;
+  if (opts.className) elem.className = opts.className;
+  if (opts.contentEditable) elem.contentEditable = opts.contentEditable;
+  if (typeof(opts.innerHTML) == "string") {
+    elem.innerHTML = opts.innerHTML;
+  }
+  return commonDivReturn(elem, opts);
+}
+
+
+
+async function loadModel() {
+  model = await tf.loadLayersModel("assets/model_0000/model.json");
+  return model;
+}
+function predict(model, x) {
+  var labels = [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+  ];
+  var output = model.predict(x.expandDims(0)).dataSync();
+  var idx = maxValIdx(output);
+  var res = {
+    predict: output,
+    bestId: idx,
+    bestLabel: labels[idx],
+    labels: labels,
+  };
+  return res;
+}
+
+
 
 
 const drawingTools = {
@@ -114,101 +212,18 @@ const drawingTools = {
 // the local 'this' context is manager.customData object!
 // we can pass our own data's throw AnimationFrameHandler functions
 function game_init(manager) {
-
-/*
-  // load TFLite model into browser
-  async function load_tflite_model() {
-    const tfliteModel = await tflite.loadTFLiteModel("assets/model_0000.tflite");
-    console.log("tfliteModel..", tfliteModel)
-  }
-  load_tflite_model();
-*/
-  var a = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]];
-
-
-  async function loadModel() {
-    //var model = await tf.loadLayersModel("https://github.com/0r4nd/HandwritingRecognition/blob/main/API/assets/model_0000/model.json");
-    var model = await tf.loadLayersModel("assets/model_0000/model.json");
-    var X = tf.tensor2d(a);
-    X = X.expandDims(-1);
-
-    //X.print()
-    //console.warn("")
-    //X.expandDims(0).print()
-    //tf.tensor(X.dataSync()).print()
-    //model.predict(X.expandDims(0))
-    var labels = [
-      "0",
-      "1",
-      "2",
-      "3",
-      "4",
-      "5",
-      "6",
-      "7",
-      "8",
-      "9",
-    ];
-
-
-    var output = model.predict(X.expandDims(0)).dataSync();
-    var idx = maxValIdx(output);
-    console.log(`Prediction is ${labels[idx]} with ${toFixed(output[idx]*100)}%`);
-    return model;
-  }
-  //this.model = loadModel();
-
-
-  // Canvas Element DOM
-  var elem = document.getElementById("canvas");
-  this.canvasElem = elem;
-  var ctx = elem.getContext("2d");
-  elem.width  = canvasWidth  * canvasRatio;
-  elem.height = canvasHeight * canvasRatio;
-  elem.style.width  = elem.width + "px";
-  elem.style.height = elem.height + "px";
-  elem.style.backgroundColor = "rgb(255,255,255)";
-  elem.style.border = "#000 2px solid";
-  elem.style.cursor = "crosshair";
-  ctx.scale(canvasRatio, canvasRatio);
+  loadModel();
 }
 
 function game_animate(manager) {
   var points = drawingTools.pensil.points;
-  var ctx = this.canvasElem.getContext("2d");
-  //ctx.lineJoin = "round";
-  //ctx.lineCap = "round";
-  ctx.lineWidth = 1;
+  var ctx = manager.target.getContext("2d");
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.lineWidth = 2;
   ctx.imageSmoothingQuality = "high"
 
-  clear_canvas(this.canvasElem);
+  clear_canvas(manager.target);
 
   for (var i = 0; i < points.length; i++) {
     var pts = points[i];
@@ -235,15 +250,86 @@ function game_animate(manager) {
     }
     ctx.stroke();
   }
+
 }
+
 
 
 function main() {
   console.clear();
-  var elem = document.getElementById("canvas");
-  var manager = new AnimFrameManager(elem);
-  
 
+  // Canvas Element DOM
+  var canvas = createCanvas({
+    width: canvasWidth/* * canvasRatio*/,
+    height: canvasHeight/* * canvasRatio*/,
+    style: {
+      width: (28 * canvasRatio) + "px",
+      height: (28 * canvasRatio) + "px",
+      backgroundColor: "rgb(255,255,255)",
+      border: "#000 2px solid",
+      cursor: "crosshair",
+    }
+  });
+
+  // Result div
+  var resultDiv = createDiv({
+    style: {
+      top: (28 * canvasRatio + 12) + "px",
+      left: (28 * canvasRatio / 3)*2 + "px",
+      width: (28 * canvasRatio / 3) + "px",
+      height: 94 + "px",
+      position: "absolute",
+      fontSize: "20px",
+      border: "#000 2px solid",
+    },
+    innerHTML: "1. Draw something<br>2. Predict"
+  })
+
+  // Prediction BUTTON
+  createButton({
+    value: "Prediction",
+    style: {
+      top: (28 * canvasRatio + 12) + "px",
+      left: 10 + "px",
+      width: (28 * canvasRatio / 3) + "px",
+      height: 100 + "px",
+      position: "absolute",
+      fontSize: "30px",
+    },
+    onclick: function() {
+      var ctx = canvas.getContext("2d");
+      //var imageData = getImageData_canvas(canvas, canvasWidth,canvasHeight);
+      var imageData = ctx.getImageData(0,0, canvas.width, canvas.height);
+      console.clear();
+      console.log(imageDataToString(imageData));
+
+      // prediction
+      var pred = predict(model, imageDataToTensor(imageData))
+      resultDiv.innerHTML = `Prediction is ${pred.bestLabel} with ${toFixed(pred.predict[pred.bestId]*100)}%`;
+      console.log(`Prediction is ${pred.bestLabel} with ${toFixed(pred.predict[pred.bestId]*100)}%`);
+    },
+  })
+
+  // Reset BUTTON
+  createButton({
+    value: "Reset",
+    style: {
+      top: (28 * canvasRatio + 12) + "px",
+      left: (28 * canvasRatio / 3) + "px",
+      width: (28 * canvasRatio / 3) + "px",
+      height: 100 + "px",
+      position: "absolute",
+      fontSize: "30px",
+    },
+    onclick: function() {
+      drawingTools.pensil.reset();
+      resultDiv.innerHTML = "1. Draw something<br>2. Predict";
+    },
+  })
+
+
+  var manager = new AnimFrameManager(canvas);
+  
   //AnimationFrameTime.frameSkip = 8;
   manager.elementEvent['init'].add(game_init);
   manager.elementEvent['animate'].add(game_animate);
@@ -276,12 +362,6 @@ function main() {
     }
     isMouseMoved = false;
     isMousedown = false;
-    
-    var canvasElem = manager.customData.canvasElem;
-    var ctx = canvasElem.getContext("2d");
-    var imageData = getImageData_canvas(canvasElem, canvasWidth,canvasHeight);
-    console.clear()
-    console.log(imageDataToString(imageData))
   });
   manager.elementEvent['mousedown'].add(event => {
     drawingTools.pensil.addId();
@@ -318,10 +398,4 @@ function main() {
   //manager.start();
   //manager.log('element');
 }
-
-
-
-
-
-
 
