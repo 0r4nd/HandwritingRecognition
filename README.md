@@ -12,5 +12,5 @@
 - Single Localisation ⭕<br>
 - Multiple Objects ⭕<br>
 
-# snapshoot API (using browser tfjs)
+# Snapshoot API (using browser tfjs)
 <img src="API/assets/snapshoot.png" width="300">
