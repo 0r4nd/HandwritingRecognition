@@ -2,8 +2,8 @@
 "use strict";
 
 
-const canvasWidth = 28;
-const canvasHeight = 28;
+const canvasWidth = 28*20;
+const canvasHeight = 28*20;
 const canvasRatio = 20; //window.devicePixelRatio;
 var isMousedown = false;
 var isMouseMoved = false;
@@ -113,10 +113,11 @@ function imageDataToTensor(imageData) {
     var arr = []
     arr3d.push(arr);
     for (var i = 0; i < w; i++) {
-      arr.push([imageData.data[j*w*4 + i*4]>127? 0:1]);
+      arr.push([1.0-(imageData.data[j*w*4 + i*4]/255.0)]);
     }
   }
-  return tf.tensor3d(arr3d)/*.expandDims(-1)*/;
+  return tf.tensor3d(arr3d);
+  //return tf.tensor2d(arr3d).expandDims(-1);
 }
 
 function copyStyle(elem, style) {
@@ -177,7 +178,7 @@ async function loadModel() {
   model = await tf.loadLayersModel("assets/model_0000/model.json");
   return model;
 }
-function predict(model, x) {
+function predictModel(model, x) {
   var labels = [
     "0",
     "1",
@@ -202,8 +203,6 @@ function predict(model, x) {
 }
 
 
-
-
 const drawingTools = {
   pensil: new PensilTool(),
 };
@@ -218,9 +217,10 @@ function game_init(manager) {
 function game_animate(manager) {
   var points = drawingTools.pensil.points;
   var ctx = manager.target.getContext("2d");
+  var ratio = 1;//canvasRatio;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 30;
   ctx.imageSmoothingQuality = "high"
 
   clear_canvas(manager.target);
@@ -228,8 +228,8 @@ function game_animate(manager) {
   for (var i = 0; i < points.length; i++) {
     var pts = points[i];
     if (pts.length == 0) continue;
-    var x1 = Math.floor(pts[0][0] / canvasRatio);
-    var y1 = Math.floor(pts[0][1] / canvasRatio);
+    var x1 = Math.floor(pts[0][0] / ratio);
+    var y1 = Math.floor(pts[0][1] / ratio);
     ctx.beginPath();
     ctx.moveTo(x1,y1);
 
@@ -242,8 +242,8 @@ function game_animate(manager) {
 
     // a line
     for (var j = 1; j < pts.length-1; j++) {
-      var x2 = Math.floor(pts[j][0] / canvasRatio);
-      var y2 = Math.floor(pts[j][1] / canvasRatio);
+      var x2 = Math.floor(pts[j][0] / ratio);
+      var y2 = Math.floor(pts[j][1] / ratio);
       ctx.lineTo(x2,y2);
       x1 = x2;
       y1 = y2;
@@ -263,11 +263,22 @@ function main() {
     width: canvasWidth/* * canvasRatio*/,
     height: canvasHeight/* * canvasRatio*/,
     style: {
-      width: (28 * canvasRatio) + "px",
-      height: (28 * canvasRatio) + "px",
+      imageRendering: "pixelated",
       backgroundColor: "rgb(255,255,255)",
       border: "#000 2px solid",
       cursor: "crosshair",
+    }
+  });
+  var canvasMini = createCanvas({
+    width: 28,
+    height: 28,
+    style: {
+      imageRendering: "pixelated",
+      //width: (28 * canvasRatio) + "px",
+      //height: (28 * canvasRatio) + "px",
+      left: (28 * canvasRatio + 13) + "px",
+      backgroundColor: "rgb(255,255,255)",
+      border: "#000 1px solid",
     }
   });
 
@@ -298,13 +309,18 @@ function main() {
     },
     onclick: function() {
       var ctx = canvas.getContext("2d");
-      //var imageData = getImageData_canvas(canvas, canvasWidth,canvasHeight);
-      var imageData = ctx.getImageData(0,0, canvas.width, canvas.height);
+      var ctxMini = canvasMini.getContext('2d');
+
+      clear_canvas(canvasMini);
+      ctxMini.imageSmoothingQuality = "high";
+      ctxMini.drawImage(canvas,0,0,canvas.width,canvas.height, 0,0,28,28);
+
+      var imageData = ctxMini.getImageData(0,0, canvasMini.width, canvasMini.height);
       console.clear();
       console.log(imageDataToString(imageData));
 
       // prediction
-      var pred = predict(model, imageDataToTensor(imageData))
+      var pred = predictModel(model, imageDataToTensor(imageData))
       resultDiv.innerHTML = `Prediction is ${pred.bestLabel} with ${toFixed(pred.predict[pred.bestId]*100)}%`;
       console.log(`Prediction is ${pred.bestLabel} with ${toFixed(pred.predict[pred.bestId]*100)}%`);
     },
@@ -324,6 +340,7 @@ function main() {
     onclick: function() {
       drawingTools.pensil.reset();
       resultDiv.innerHTML = "1. Draw something<br>2. Predict";
+      clear_canvas(canvasMini);
     },
   })
 
