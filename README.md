@@ -13,3 +13,4 @@
 - Multiple Objects ⭕<br>
 
 # snapshoot API (using browser tfjs)
+<img src="assets/snapshoot.jpg" width="600">
