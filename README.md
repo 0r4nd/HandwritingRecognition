@@ -9,7 +9,7 @@
 
 # Implementation status
 - Single Classification ✅<br>
-- Single Localisation ⭕<br>
+- Single Localisation ✅<br>
 - Multiple Objects ⭕<br>
 
 # Snapshoot API (using browser tfjs)
