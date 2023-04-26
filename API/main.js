@@ -9,8 +9,9 @@ var isMousedown = false;
 var isMouseMoved = false;
 var isCtrlDown = false;
 var mousePrevPos = [0,0];
-var model = undefined;
 
+var model = undefined;
+var model_aabb = [0,0,0,0];
 
 const PensilTool = (function() {
   function PensilTool() {
@@ -113,7 +114,7 @@ function imageDataToTensor(imageData) {
     var arr = []
     arr3d.push(arr);
     for (var i = 0; i < w; i++) {
-      arr.push([1.0-(imageData.data[j*w*4 + i*4]/255.0)]);
+      arr.push([imageData.data[j*w*4 + i*4]/255.0]);
     }
   }
   return tf.tensor3d(arr3d);
@@ -191,10 +192,12 @@ function predictModel(model, x) {
     "8",
     "9",
   ];
-  var output = model.predict(x.expandDims(0)).dataSync();
-  var idx = maxValIdx(output);
+  var output = model.predict(x.expandDims(0));
+  var predict = [output[0].dataSync(), output[1].dataSync()]
+  var idx = maxValIdx(predict[0]);
+
   var res = {
-    predict: output,
+    predict: predict,
     bestId: idx,
     bestLabel: labels[idx],
     labels: labels,
@@ -202,6 +205,17 @@ function predictModel(model, x) {
   return res;
 }
 
+
+function drawRect(canvas, points) {
+  var ctx = canvas.getContext("2d");
+  var x = points[0];
+  var y = points[1];
+  var width = points[2]-x;
+  var height = points[3]-y;
+  ctx.beginPath();
+  ctx.rect(x,y,width,height);
+  ctx.stroke();
+}
 
 const drawingTools = {
   pensil: new PensilTool(),
@@ -214,22 +228,17 @@ function game_init(manager) {
   loadModel();
 }
 
-function game_animate(manager) {
-  var points = drawingTools.pensil.points;
-  var ctx = manager.target.getContext("2d");
-  var ratio = 1;//canvasRatio;
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-  ctx.lineWidth = 30;
-  ctx.imageSmoothingQuality = "high"
 
-  clear_canvas(manager.target);
+function drawPaths(canvas, points, lineWidth=20, strokeStyle="black") {
+  var ctx = canvas.getContext("2d");
+  ctx.lineWidth = lineWidth;
+  ctx.strokeStyle = strokeStyle;
 
   for (var i = 0; i < points.length; i++) {
     var pts = points[i];
     if (pts.length == 0) continue;
-    var x1 = Math.floor(pts[0][0] / ratio);
-    var y1 = Math.floor(pts[0][1] / ratio);
+    var x1 = Math.floor(pts[0][0]);
+    var y1 = Math.floor(pts[0][1]);
     ctx.beginPath();
     ctx.moveTo(x1,y1);
 
@@ -242,21 +251,45 @@ function game_animate(manager) {
 
     // a line
     for (var j = 1; j < pts.length-1; j++) {
-      var x2 = Math.floor(pts[j][0] / ratio);
-      var y2 = Math.floor(pts[j][1] / ratio);
+      var x2 = Math.floor(pts[j][0]);
+      var y2 = Math.floor(pts[j][1]);
       ctx.lineTo(x2,y2);
       x1 = x2;
       y1 = y2;
     }
     ctx.stroke();
   }
+}
 
+
+
+function game_animate(manager) {
+  var points = drawingTools.pensil.points;
+  var ctx = manager.target.getContext("2d");
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.imageSmoothingQuality = "high"
+
+  clear_canvas(manager.target);
+
+  // draw bounding-box
+  ctx.strokeStyle = '#ff0000';
+  ctx.lineWidth = 4;
+  drawRect(manager.target, model_aabb)
+
+  // draw lines
+  drawPaths(manager.target, points, 80, 'rgba(0,0,0,0.2)');
+  drawPaths(manager.target, points, 65, 'rgba(0,0,0,0.3)');
+  drawPaths(manager.target, points, 50, 'rgba(0,0,0,0.4)');
+  drawPaths(manager.target, points, 35, 'rgba(0,0,0,0.5)');
+  drawPaths(manager.target, points, 20, 'rgba(0,0,0,1.0)');
 }
 
 
 
 function main() {
   console.clear();
+  document.body.style.backgroundColor = "#42414d";
 
   // Canvas Element DOM
   var canvas = createCanvas({
@@ -274,8 +307,8 @@ function main() {
     height: 28,
     style: {
       imageRendering: "pixelated",
-      //width: (28 * canvasRatio) + "px",
-      //height: (28 * canvasRatio) + "px",
+      width: (28 * canvasRatio) + "px",
+      height: (28 * canvasRatio) + "px",
       left: (28 * canvasRatio + 13) + "px",
       backgroundColor: "rgb(255,255,255)",
       border: "#000 1px solid",
@@ -286,14 +319,15 @@ function main() {
   var resultDiv = createDiv({
     style: {
       top: (28 * canvasRatio + 12) + "px",
-      left: (28 * canvasRatio / 3)*2 + "px",
-      width: (28 * canvasRatio / 3) + "px",
-      height: 94 + "px",
+      left: canvasMini.style.left,
+      width: canvasMini.style.width,
+      height: 50 + "px",
       position: "absolute",
-      fontSize: "20px",
+      fontSize: "40px",
       border: "#000 2px solid",
+      backgroundColor: "rgb(255,255,255)",
     },
-    innerHTML: "1. Draw something<br>2. Predict"
+    innerHTML: "Results..."
   })
 
   // Prediction BUTTON
@@ -313,6 +347,8 @@ function main() {
 
       clear_canvas(canvasMini);
       ctxMini.imageSmoothingQuality = "high";
+      ctxMini.filter = 'invert(1)'
+
       ctxMini.drawImage(canvas,0,0,canvas.width,canvas.height, 0,0,28,28);
 
       var imageData = ctxMini.getImageData(0,0, canvasMini.width, canvasMini.height);
@@ -321,17 +357,24 @@ function main() {
 
       // prediction
       var pred = predictModel(model, imageDataToTensor(imageData))
-      resultDiv.innerHTML = `Prediction is ${pred.bestLabel} with ${toFixed(pred.predict[pred.bestId]*100)}%`;
-      console.log(`Prediction is ${pred.bestLabel} with ${toFixed(pred.predict[pred.bestId]*100)}%`);
+
+      model_aabb = pred.predict[1].map(a => a*canvas.width);
+      //console.error(pred.predict[1].map(a => a*20))
+      if (pred.predict[0][pred.bestId] > 0.8) resultDiv.style.backgroundColor = "rgb(128,255,128)";
+      else resultDiv.style.backgroundColor = "rgb(255,128,128)";
+
+      resultDiv.innerHTML = `Prediction is "${pred.bestLabel}" with ${toFixed(pred.predict[0][pred.bestId]*100)}%`;
+      console.log(`Prediction is ${pred.bestLabel} with ${toFixed(pred.predict[0][pred.bestId]*100)}%`);
     },
   })
+
 
   // Reset BUTTON
   createButton({
     value: "Reset",
     style: {
       top: (28 * canvasRatio + 12) + "px",
-      left: (28 * canvasRatio / 3) + "px",
+      left: (28 * canvasRatio / 3)*1.1 + "px",
       width: (28 * canvasRatio / 3) + "px",
       height: 100 + "px",
       position: "absolute",
@@ -339,8 +382,10 @@ function main() {
     },
     onclick: function() {
       drawingTools.pensil.reset();
-      resultDiv.innerHTML = "1. Draw something<br>2. Predict";
+      resultDiv.innerHTML = "Results...";
+      resultDiv.style.backgroundColor = "rgb(255,255,255)";
       clear_canvas(canvasMini);
+      model_aabb = [0,0,0,0];
     },
   })
 
