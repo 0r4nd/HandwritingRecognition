@@ -11,5 +11,5 @@
 - Object Detection ✅<br>
 - Multiple Objects Detection ⭕<br>
 
-# Snapshoot APP
+# Snapshoot App
 <img src="API/assets/snapshoot.png" width="300">
