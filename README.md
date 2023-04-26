@@ -7,9 +7,11 @@
 5. Remote server with Docker API + requests with pixels converted to Base64 (not used)
 
 # Implementation status
+- Digits ✅<br>
 - Classification ✅<br>
 - Object Detection ✅<br>
 - Multiple Objects Detection ⭕<br>
+- Alphabet ⭕<br>
 
 # Snapshoot App
 <img src="API/assets/snapshoot.png" width="300">
