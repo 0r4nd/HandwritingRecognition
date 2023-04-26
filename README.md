@@ -9,8 +9,8 @@
 
 # Implementation status
 - Single Classification ✅<br>
-- Single Localisation ✅<br>
-- Multiple Objects ⭕<br>
+- Object Detection ✅<br>
+- Multiple Objects Detection ⭕<br>
 
 # Snapshoot API (using browser tfjs)
 <img src="API/assets/snapshoot.png" width="300">
