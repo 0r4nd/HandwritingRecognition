@@ -10,8 +10,7 @@
 - Digits ✅<br>
 - Classification ✅<br>
 - Object Detection ✅<br>
-- Multiple Objects Detection ⭕<br>
-- Alphabet ⭕<br>
+- Multiple Objects Detection (R-CNN) ⭕<br>
 
 # Snapshoot App
 <img src="API/assets/snapshoot.png" width="300">
