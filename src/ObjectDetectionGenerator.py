@@ -321,7 +321,10 @@ class ObjectDetectionGenerator:
 
 
 if __name__ == "__main__":
-    (X_train, y_train), (X_test, y_test) = datasets.mnist.load_data(path="mnist.npz")
-    og = ObjectDetectionGenerator(X_train, y_train, X_test, y_test,
-                                  os.path.join(os.path.dirname(os.path.abspath("__file__")), 'dataset'))
+    try: # python
+        dataset_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "dataset")
+    except NameError: # jupyter notebook
+        dataset_dir = os.path.join(os.path.dirname(os.getcwd()), 'dataset')
 
+    (X_train, y_train), (X_test, y_test) = datasets.mnist.load_data(path="mnist.npz")
+    og = ObjectDetectionGenerator(X_train, y_train, X_test, y_test, dataset_dir)
