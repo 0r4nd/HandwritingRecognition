@@ -4,7 +4,7 @@
 2. Formatting in classes with VisualStudioCode
 3. Model export -> conversion -> compression
 4. Browser APP using tfjs
-5. Remote server with Docker API + requests with pixels converted to Base64 (not used)
+<img src="API/assets/schema.png" width="400">
 
 # Implementation status
 - Digits ✅<br>
