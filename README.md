@@ -10,6 +10,7 @@
 - Digits ✅<br>
 - Classification ✅<br>
 - Object Detection ✅<br>
+- Multiple Objects Generation ✅<br>
 - Multiple Objects Detection (R-CNN) ⭕<br>
 
 # Snapshoot App
