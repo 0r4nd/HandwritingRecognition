@@ -23,7 +23,7 @@ const PensilTool = (function() {
         this.points.push([]);
         this.pointsDeleted = [];
     };
-    PensilTool.prototype.ctrlZ = function() {
+    PensilTool.prototype.undo = function() {
         const len = this.points.length;
         if (len === 0) return;
         if (len > 1 && this.points[len-1].length === 0) {
@@ -36,7 +36,7 @@ const PensilTool = (function() {
             this.pointsDeleted.push(arr);
         }
     };
-    PensilTool.prototype.ctrlY = function() {
+    PensilTool.prototype.redo = function() {
         if (this.pointsDeleted.length > 0) {
             this.points.push(this.pointsDeleted.pop())
         }
@@ -167,6 +167,17 @@ const onMouseMove = (event) => {
 
 
 export default function DrawCanvas({onReset}) {
+
+
+    const handleRemove = () => {
+    };
+    const handleUndo = () => {
+        drawingTools.pensil.undo();
+    };
+    const handleRedo = () => {
+        drawingTools.pensil.redo();
+    };
+
     return ( 
         <Stack direction='column' alignItems='flex-start'>
             <canvas
@@ -177,10 +188,10 @@ export default function DrawCanvas({onReset}) {
                 width="280" height="280"
             ></canvas>
             <Stack spacing={0} direction='row' alignItems='flex-start'>
-                <IconButton aria-label='brush'><BrushIcon/></IconButton>
+                <IconButton onClick={()=>alert("hello!")} aria-label='brush'><BrushIcon/></IconButton>
                 <IconButton aria-label='clear'><ClearIcon/></IconButton>
-                <IconButton aria-label='undo'><UndoIcon/></IconButton>
-                <IconButton aria-label='redo'><RedoIcon/></IconButton>
+                <IconButton onClick={handleUndo} aria-label='undo'><UndoIcon/></IconButton>
+                <IconButton onClick={handleRedo} aria-label='redo'><RedoIcon/></IconButton>
             </Stack>
             
         </Stack>
