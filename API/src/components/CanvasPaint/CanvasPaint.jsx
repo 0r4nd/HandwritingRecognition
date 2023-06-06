@@ -1,13 +1,16 @@
 
 
+import { useState, useEffect, forwardRef, useRef } from "react"
 import { Stack, Button, IconButton, Typography, Divider, Box, Grid } from '@mui/material'
 import './CanvasPaint.css';
+
 
 import BrushIcon from '@mui/icons-material/Brush'
 import ClearIcon from '@mui/icons-material/Clear'
 
 import UndoIcon from '@mui/icons-material/Undo'
 import RedoIcon from '@mui/icons-material/Redo'
+
 
 /* Classes */
 const PensilTool = (function() {
@@ -49,6 +52,7 @@ const PensilTool = (function() {
 
 
 /* global variables */
+var isContextInitialized = false;
 var isMousedown = false;
 var isMouseMoved = false;
 var isCtrlDown = false;
@@ -89,8 +93,6 @@ function drawPaths(canvas, points, lineWidth=20, strokeStyle="black") {
         ctx.stroke();
     }
 }
-
-
 function clearCanvas(canvas) {
     var ctx = canvas.getContext("2d");
     ctx.save();
@@ -112,50 +114,19 @@ function drawRect(canvas, points) {
     ctx.rect(x,y,width,height);
     ctx.stroke();
 }
+const canvasDraw = (canvas, points) => {
+    if (!isContextInitialized) {
+        isContextInitialized = true;
+        const ctx = canvas.getContext("2d");
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.imageSmoothingQuality = "high"
 
-const getMouseCoords = (event, elem) => {
-    var rect = elem.getBoundingClientRect();
-    return [event.clientX - rect.left, event.clientY - rect.top];
-}
-
-const onMouseDown = (event) => {
-    drawingTools.pensil.addId();
-    isMouseMoved = false;
-    isMousedown = true;
-    //console.log("mouse down")
-};
-const onMouseUp = (event) => {
-    if (isMouseMoved === false) {
-        var xy = getMouseCoords(event, event.target);
-        drawingTools.pensil.addPoint(xy[0],xy[1]);
+        // draw bounding-box
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 4;
+        //drawRect(canvas, model_aabb);
     }
-    isMouseMoved = false;
-    isMousedown = false;
-    console.warn(event.target)
-    //drawPaths(event.target, drawingTools.pensil.points);
-};
-const onMouseMove = (event) => {
-    const canvas = event.target;
-    const points = drawingTools.pensil.points;
-    const xy = getMouseCoords(event, canvas);
-    console.log(xy)
-    if (!(isMousedown &&
-        (mousePrevPos[0]!==xy[0] && mousePrevPos[1]!==xy[1]))) return;
-
-    const ctx = canvas.getContext("2d");
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
-    ctx.imageSmoothingQuality = "high"
-
-    // draw bounding-box
-    ctx.strokeStyle = '#ff0000';
-    ctx.lineWidth = 4;
-    //drawRect(canvas, model_aabb);
-
-    drawingTools.pensil.addPoint(xy[0],xy[1]);
-    mousePrevPos[0] = xy[0];
-    mousePrevPos[1] = xy[1];
-    isMouseMoved = true;
     clearCanvas(canvas);
     drawPaths(canvas, points, 80/2, 'rgba(0,0,0,0.2)');
     drawPaths(canvas, points, 65/2, 'rgba(0,0,0,0.3)');
@@ -164,39 +135,98 @@ const onMouseMove = (event) => {
     drawPaths(canvas, points, 20/2, 'rgba(0,0,0,1.0)');
 };
 
+const getMouseCoords = (event, elem) => {
+    var rect = elem.getBoundingClientRect();
+    return [event.clientX - rect.left, event.clientY - rect.top];
+}
 
 
-export default function DrawCanvas({onReset}) {
+const GrandChild = forwardRef(function (props, ref) {
+    return <div ref={ref}>Deep!</div>
+  })
 
 
-    const handleRemove = () => {
+ const CanvasPaint = forwardRef(function(props, ref) {    
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    // This will run one time after the component mounts
+    useEffect(() => {
+        const onPageLoad = () => { setIsLoaded(true); };
+        if (document.readyState === 'complete') {
+            onPageLoad();
+        } else {
+            window.addEventListener('load', onPageLoad);
+            return () => window.removeEventListener('load', onPageLoad);
+        }
+    }, []);
+
+
+    const handleBrush = () => {
+    };
+    const handleClear = () => {
+        clearCanvas(ref.current);
+        drawingTools.pensil.reset();
     };
     const handleUndo = () => {
         drawingTools.pensil.undo();
+        canvasDraw(ref.current, drawingTools.pensil.points);
     };
     const handleRedo = () => {
         drawingTools.pensil.redo();
+        canvasDraw(ref.current, drawingTools.pensil.points);
     };
+    const onMouseDown = (event) => {
+        drawingTools.pensil.addId();
+        isMouseMoved = false;
+        isMousedown = true;
+        //console.log("mouse down")
+    };
+    const onMouseUp = (event) => {
+        if (isMouseMoved === false) {
+            var xy = getMouseCoords(event, event.target);
+            drawingTools.pensil.addPoint(xy[0],xy[1]);
+        }
+        isMouseMoved = false;
+        isMousedown = false;
+        canvasDraw(event.target, drawingTools.pensil.points);
+        //handleCanvasElem(event.target);
+    };
+    const onMouseMove = (event) => {
+        const canvas = event.target;
+        const points = drawingTools.pensil.points;
+        const xy = getMouseCoords(event, canvas);
+        if (!(isMousedown &&
+            (mousePrevPos[0]!==xy[0] && mousePrevPos[1]!==xy[1]))) return;
+    
+        drawingTools.pensil.addPoint(xy[0],xy[1]);
+        mousePrevPos[0] = xy[0];
+        mousePrevPos[1] = xy[1];
+        isMouseMoved = true;
+        canvasDraw(canvas, points);
+    };
+
 
     return ( 
         <Stack direction='column' alignItems='flex-start'>
             <canvas
-                className="DrawCanvas"
+                className="CanvasPaint"
+                ref={ref}
+                onLoad={()=>alert("LOADED!")}
                 onMouseDown={onMouseDown}
                 onMouseUp={onMouseUp}
                 onMouseMove={onMouseMove}
-                width="280" height="280"
+                width={props.width||200} height={props.height||200}
             ></canvas>
             <Stack spacing={0} direction='row' alignItems='flex-start'>
-                <IconButton onClick={()=>alert("hello!")} aria-label='brush'><BrushIcon/></IconButton>
-                <IconButton aria-label='clear'><ClearIcon/></IconButton>
+                <IconButton variant= "outlined" color="primary" onClick={handleBrush} aria-label='brush'><BrushIcon/></IconButton>
+                <IconButton onClick={handleClear} aria-label='clear'><ClearIcon/></IconButton>
                 <IconButton onClick={handleUndo} aria-label='undo'><UndoIcon/></IconButton>
                 <IconButton onClick={handleRedo} aria-label='redo'><RedoIcon/></IconButton>
             </Stack>
-            
         </Stack>
     )
-}
+});
 
 
 
+export default CanvasPaint;
