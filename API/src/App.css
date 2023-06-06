@@ -1,5 +1,6 @@
 .App {
-  text-align: center;
+  /*text-align: center;*/
+  padding: 4rem;
 }
 
 .App-logo {
@@ -37,8 +38,8 @@
 }
 
 .App-canvas-output {
-  width: 280px;
-  height: 280px;
+  /*width: 280px;*/
+  /*height: 280px;*/
   image-Rendering: pixelated;
   background-color: rgb(255,255,255);
   border: #f00 2px solid;
