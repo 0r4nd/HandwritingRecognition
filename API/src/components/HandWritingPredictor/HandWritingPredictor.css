@@ -1,0 +1,27 @@
+
+.HandWritingPredictor {
+    /*text-align: center;*/
+    padding: 4rem;
+}
+  
+.HandWritingPredictor-button {
+    background-color: rgb(80, 143, 198);
+    color: white;
+    font-size: 20px;
+    padding: 10px 60px;
+    border-radius: 5px;
+    margin: 10px 0px;
+    cursor: pointer;
+    width: 200px;
+    height: 100px;
+}
+  
+.HandWritingPredictor-canvas-output {
+    /*width: 280px;*/
+    /*height: 280px;*/
+    image-Rendering: pixelated;
+    background-color: rgb(255,255,255);
+    border: #f00 2px solid;
+    border-radius: 10px;
+}
+  
