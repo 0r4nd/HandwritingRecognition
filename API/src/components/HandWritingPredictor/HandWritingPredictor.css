@@ -2,6 +2,7 @@
 .HandWritingPredictor {
     /*text-align: center;*/
     padding: 4rem;
+    font-family: system-ui;
 }
   
 .HandWritingPredictor-button {
@@ -21,7 +22,9 @@
     /*height: 280px;*/
     image-Rendering: pixelated;
     background-color: rgb(255,255,255);
-    border: #f00 2px solid;
+    /*border: #f00 2px solid;*/
     border-radius: 10px;
+    padding:20;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
 }
   
