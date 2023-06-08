@@ -3,6 +3,7 @@
 import * as tf from '@tensorflow/tfjs';
 import { useState, useRef, useEffect } from "react"
 import { Stack, Paper, Card, Box, Alert } from "@mui/material"
+import { createTheme, ThemeProvider, styled } from '@mui/material/styles';
 
 import './HandWritingPredictor.css';
 import MuiButton from "../MuiButton/MuiButton";
@@ -12,6 +13,8 @@ const URL = {
     model: './assets/models/model_0000/model.json',
 };
 
+const darkTheme = createTheme({ palette: { mode: 'dark' } });
+const lightTheme = createTheme({ palette: { mode: 'light' } });
 
 
 function toFixed(x, count = 2) {
@@ -170,31 +173,37 @@ export default function HandWritingPredictor() {
       else if (acc < 90) severity = "warning";
       result = `The best prediction is ${objectsBbox[0].bestLabel} with ${objectsBbox[0].accuracy}%`;
     }
-    return <Alert severity={severity}>{result}</Alert>;
+    return <Paper elevation={3}><Alert sx={{fontWeight:900,fontSize:"20px"}} variant="filled" severity={severity}>{result}</Alert></Paper>;
   };
 
   return <div className="HandWritingPredictor">
-    <Box sx={{ width: 600, height: 600 }}>
-      <Card variant="outlined">
-        <Stack spacing={2} direction='row' alignItems='flex-start'>
-          <CanvasPaint ref={canvasInputRef}
-                      width={canvasSize.width*canvasInputRatio}
-                      height={canvasSize.height*canvasInputRatio}></CanvasPaint>
+    <ThemeProvider theme={lightTheme}>
 
-          <canvas ref={canvasOutputRef} className="App-canvas-output"
-                  width={canvasSize.width} height={canvasSize.height}
-                  style={{ width:canvasSize.width*canvasOutputRatio,
-                          height:canvasSize.height*canvasOutputRatio }}></canvas>
-        </Stack>
+        <Paper style={{width: 600,padding: 16}} elevation={8}>
 
-        <Stack spacing={2}  direction='row'>
-          <MuiButton onClick={handleClickRender} color='secondary' variant='contained' size='large' text="Predict"/>
-          {/*<Paper variant="outlined" elevation={3}>Result:</Paper>*/}
-          {ShowResult()}
-        </Stack>
-      </Card>
-    </Box>
+          <Stack spacing={2}>
+            <Stack spacing={2} direction='row' alignItems='flex-start'>
+              <CanvasPaint ref={canvasInputRef}
+                          width={canvasSize.width*canvasInputRatio}
+                          height={canvasSize.height*canvasInputRatio}></CanvasPaint>
+
+              <canvas ref={canvasOutputRef} className="HandWritingPredictor-canvas-output"
+                      width={canvasSize.width} height={canvasSize.height}
+                      style={{ width:canvasSize.width*canvasOutputRatio,
+                              height:canvasSize.height*canvasOutputRatio }}></canvas>
+            </Stack>
+
+            <Stack spacing={2}  direction='row'>
+              <MuiButton onClick={handleClickRender} color='primary' variant='contained' size='large' text="Predict"/>
+              {ShowResult()}
+            </Stack>
+
+          </Stack>
+
+        </Paper>
+      </ThemeProvider>;
   </div>
   
 }
+
 
