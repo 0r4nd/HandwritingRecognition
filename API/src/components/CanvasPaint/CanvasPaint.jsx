@@ -1,7 +1,7 @@
 
 
 import { useState, useEffect, forwardRef, useRef } from "react"
-import { Stack, Button, IconButton, Typography, Divider, Box, Grid } from '@mui/material'
+import { Stack, IconButton, Typography, Paper, Box, Grid } from '@mui/material'
 import './CanvasPaint.css';
 
 
@@ -207,7 +207,7 @@ const GrandChild = forwardRef(function (props, ref) {
 
 
     return ( 
-        <Stack direction='column' alignItems='flex-start'>
+        <Stack spacing={0.5} direction='column' alignItems='flex-start'>
             <canvas
                 className="CanvasPaint"
                 ref={ref}
@@ -217,12 +217,14 @@ const GrandChild = forwardRef(function (props, ref) {
                 onMouseMove={onMouseMove}
                 width={props.width||200} height={props.height||200}
             ></canvas>
-            <Stack spacing={0} direction='row' alignItems='flex-start'>
-                <IconButton variant= "outlined" color="primary" onClick={handleBrush} aria-label='brush'><BrushIcon/></IconButton>
-                <IconButton onClick={handleClear} aria-label='clear'><ClearIcon/></IconButton>
-                <IconButton onClick={handleUndo} aria-label='undo'><UndoIcon/></IconButton>
-                <IconButton onClick={handleRedo} aria-label='redo'><RedoIcon/></IconButton>
-            </Stack>
+            <Paper elevation={3}>
+                <Stack spacing={0} direction='row' alignItems='flex-start'>
+                    <IconButton variant= "outlined" color="primary" onClick={handleBrush} aria-label='brush'><BrushIcon/></IconButton>
+                    <IconButton onClick={handleClear} aria-label='clear'><ClearIcon/></IconButton>
+                    <IconButton onClick={handleUndo} aria-label='undo'><UndoIcon/></IconButton>
+                    <IconButton onClick={handleRedo} aria-label='redo'><RedoIcon/></IconButton>
+                </Stack>
+            </Paper>
         </Stack>
     )
 });
