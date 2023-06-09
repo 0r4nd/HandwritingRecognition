@@ -2,12 +2,15 @@
 
 import * as tf from '@tensorflow/tfjs';
 import { useState, useRef, useEffect } from "react"
-import { Stack, Paper, Card, Box, Alert } from "@mui/material"
+import { Stack, Paper, Card, Box, Alert, TextField, InputAdornment } from "@mui/material"
 import { createTheme, ThemeProvider, styled } from '@mui/material/styles';
 
 import './HandWritingPredictor.css';
 import MuiButton from "../MuiButton/MuiButton";
 import CanvasPaint from "../CanvasPaint/CanvasPaint";
+
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera'
+
 
 const URL = {
     model: './assets/models/model_0000/model.json',
@@ -96,11 +99,14 @@ function copyCanvas(srcCanvas, dstCanvas) {
 export default function HandWritingPredictor() {
   const canvasInputRef = useRef(null);
   const canvasOutputRef = useRef(null);
+  const [urlImage, setUrlImage] = useState("");
   const [canvasSize, canvasSetSize] = useState({width:28, height:28});
   const [canvasInputRatio] = useState(10);
   const [canvasOutputRatio] = useState(8);
   const [model, setModel] = useState(null);
   const [objectsBbox, setObjectsBbox] = useState([]);
+
+
 
   async function loadModel(url) {
     try {
@@ -187,10 +193,27 @@ export default function HandWritingPredictor() {
                           width={canvasSize.width*canvasInputRatio}
                           height={canvasSize.height*canvasInputRatio}></CanvasPaint>
 
-              <canvas ref={canvasOutputRef} className="HandWritingPredictor-canvas-output"
-                      width={canvasSize.width} height={canvasSize.height}
-                      style={{ width:canvasSize.width*canvasOutputRatio,
-                              height:canvasSize.height*canvasOutputRatio }}></canvas>
+              <Stack spacing={2}>
+                <canvas ref={canvasOutputRef} className="HandWritingPredictor-canvas-output"
+                        width={canvasSize.width} height={canvasSize.height}
+                        style={{ width:canvasSize.width*canvasOutputRatio,
+                                height:canvasSize.height*canvasOutputRatio }}></canvas>
+
+                <TextField
+                  label="Image to fill the canvas"
+                  onChange={(event) => setUrlImage(event.target.value)}
+                  variant='outlined'
+                  size="small"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="end">
+                        <PhotoCameraIcon/>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Stack>
+
             </Stack>
 
             <Stack spacing={2}  direction='row'>
@@ -201,7 +224,10 @@ export default function HandWritingPredictor() {
           </Stack>
 
         </Paper>
-      </ThemeProvider>;
+
+
+
+      </ThemeProvider>
   </div>
   
 }
