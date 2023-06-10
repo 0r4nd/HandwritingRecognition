@@ -2,24 +2,15 @@
 
 import * as tf from '@tensorflow/tfjs';
 import { useState, useRef, useEffect } from "react"
-import { Stack, Paper, Card, Box, Alert, TextField, InputAdornment } from "@mui/material"
-import { createTheme, ThemeProvider, styled } from '@mui/material/styles';
+import { Stack, Paper, Button, Alert } from "@mui/material"
 
 import './HandWritingPredictor.css';
-import MuiButton from "../MuiButton/MuiButton";
+import MuiTextFieldImageURL from "../MuiTextFieldImageURL";
 import CanvasPaint from "../CanvasPaint/CanvasPaint";
 
-import PhotoCameraIcon from '@mui/icons-material/PhotoCamera'
 
-
-const URL = {
-    model: './assets/models/model_0000/model.json',
-};
-
-const darkTheme = createTheme({ palette: { mode: 'dark' } });
-const lightTheme = createTheme({ palette: { mode: 'light' } });
-
-
+/***********************************************************************/
+/* Utils */
 function toFixed(x, count = 2) {
   x = Math.floor(x * 100) / 100;
   return x.toFixed(count);
@@ -31,7 +22,6 @@ function maxValIdx(arr) {
   }
   return maxIdx;
 }
-
 function imageDataToString(imageData) {
   var w = imageData.width;
   var h = imageData.height;
@@ -45,6 +35,9 @@ function imageDataToString(imageData) {
   return str;
 }
 
+
+/***********************************************************************/
+/* Tensorflow functions */
 function imageDataToTensor(imageData) {
   var w = imageData.width;
   var h = imageData.height;
@@ -72,9 +65,24 @@ function predictModel(model, x) {
   };
   return res;
 }
+async function loadModel(modelURL, setModel) {
+  try {
+    // For layered model
+    const model = await tf.loadLayersModel(modelURL);
+    // For graph model
+    //const model = await tf.loadGraphModel(modelURL);
+    setModel(model);
+    console.log("Load model success");
+    //console.log(model);
+    return model;
+  } catch (err) {
+    console.error("Error loading model:", err);
+  }
+}
 
 
-
+/***********************************************************************/
+/* Canvas drawing functions */
 function clearCanvas(canvas) {
   var ctx = canvas.getContext("2d");
   ctx.save();
@@ -87,45 +95,66 @@ function clearCanvas(canvas) {
   return canvas;
 }
 function copyCanvas(srcCanvas, dstCanvas) {
-  var srcCtx = srcCanvas.getContext("2d");
   var dstCtx = dstCanvas.getContext('2d');
   clearCanvas(dstCanvas);
   dstCtx.imageSmoothingQuality = "high";
   dstCtx.filter = 'invert(1)';
-  dstCtx.drawImage(srcCanvas,0,0,srcCanvas.width,srcCanvas.height, 0,0,28,28);
+  dstCtx.drawImage(srcCanvas,0,0,srcCanvas.width,srcCanvas.height,
+                             0,0,dstCanvas.width,dstCanvas.height);
+}
+function copyURLtoCanvas(canvas, url) {
+  var ctx = canvas.getContext('2d');
+  var img = new Image();
+  //img.crossOrigin = "anonymous";
+  img.onload = () => {
+    ctx.drawImage(img,0,0, canvas.width, canvas.height);
+  };
+  img.src = url;
 }
 
 
-export default function HandWritingPredictor() {
+/***********************************************************************/
+/* React */
+function RenderButton({onClick, variant='contained', color='primary', size='large'}) {
+  return <Button onClick={onClick} variant={variant} color={color} size={size}>Predict</Button>
+}
+function ShowResult({objectsBbox}) {
+  var severity = "info";
+  var result = "Draw something and let the model predict what it is.";
+  if (objectsBbox.length > 0) {
+    var acc = objectsBbox[0].accuracy;
+    severity = "success";
+    if (acc < 70) severity = "error";
+    else if (acc < 90) severity = "warning";
+    result = `The best prediction is ${objectsBbox[0].bestLabel} with ${objectsBbox[0].accuracy}%`;
+  }
+  return (
+    <Paper elevation={3}>
+      <Alert sx={{fontWeight:900,fontSize:"20px"}}
+        variant="filled"
+        severity={severity}>{result}
+      </Alert>
+    </Paper>
+  );
+}
+
+
+
+/***********************************************************************/
+/* main */
+export default function HandWritingPredictor({modelURL=''}) {
   const canvasInputRef = useRef(null);
   const canvasOutputRef = useRef(null);
-  const [urlImage, setUrlImage] = useState("");
-  const [canvasSize, canvasSetSize] = useState({width:28, height:28});
-  const [canvasInputRatio] = useState(10);
-  const [canvasOutputRatio] = useState(8);
+  const [imageParams] = useState({
+    width:28, height:28,
+    inputScale:10, outputScale:8,
+  });
   const [model, setModel] = useState(null);
   const [objectsBbox, setObjectsBbox] = useState([]);
 
-
-
-  async function loadModel(url) {
-    try {
-      // For layered model
-      const model = await tf.loadLayersModel(url.model);
-      // For graph model
-      //const model = await tf.loadGraphModel(url.model);
-      setModel(model);
-      console.log("Load model success");
-      //console.log(model);
-      return model;
-    } catch (err) {
-      console.error("Error loading model:", err);
-    }
-  }
-
   useEffect(() => {
     tf.ready().then(() => {
-      setModel(loadModel(URL));
+      setModel(loadModel(modelURL,setModel));
     });
   }, []);
 
@@ -133,15 +162,12 @@ export default function HandWritingPredictor() {
     const canvasInput = canvasInputRef.current;
     const canvasOutput = canvasOutputRef.current;
     const ctxOutput = canvasOutput.getContext('2d');
-    //console.log("render: ", "paint:", canvasInput, "mini:", canvasOutput);
     canvasOutput.imageSmoothingQuality = "high";
     canvasOutput.filter = 'invert(1)';
     copyCanvas(canvasInput, canvasOutput);
-
-    //ctxMini.drawImage(canvas,0,0,canvas.width,canvas.height, 0,0,28,28);
-    const imageData = ctxOutput.getImageData(0,0, canvasOutput.width, canvasOutput.height);
+    const imageData = ctxOutput.getImageData(0,0, imageParams.width, imageParams.height);
     console.clear();
-    //console.log(imageDataToString(imageData));
+    console.log(imageDataToString(imageData));
 
     // prediction
     const pred = predictModel(model, imageDataToTensor(imageData));
@@ -150,86 +176,44 @@ export default function HandWritingPredictor() {
     objectsBboxCopy = [];
     objectsBboxCopy.push({
       bestLabel: pred.bestLabel,
-      bbox: pred.predict[1].map(a => a*canvasInput.width),
+      bbox: pred.predict[1].map(a => a*imageParams.width),
       accuracy: toFixed(pred.predict[0][pred.bestId]*100),
     });
     setObjectsBbox(objectsBboxCopy);
-
-    //console.log(pred.predict[1].map(a => a*canvasInput.width));
-
-    //console.error(pred.predict[1].map(a => a*20))
-    //if (pred.predict[0][pred.bestId] > 0.8) resultDiv.style.backgroundColor = "rgb(128,255,128)";
-    //else resultDiv.style.backgroundColor = "rgb(255,128,128)";
-
-    //resultDiv.innerHTML = `Prediction is "${pred.bestLabel}" with ${toFixed(pred.predict[0][pred.bestId]*100)}%`;
-    //console.log(`The best prediction is ${objectsBboxCopy[0].bestLabel} with ${objectsBboxCopy[0].accuracy}%`);
-    
     console.log(Array.from(pred.predict[0])/*.map(a => toFixed(a))*/)
     console.log(objectsBbox, objectsBboxCopy);
   };
 
 
-  const ShowResult = () => {
-    var severity = "info";
-    var result = "Draw something and let the model predict what it is.";
-    if (objectsBbox.length > 0) {
-      var acc = objectsBbox[0].accuracy;
-      severity = "success";
-      if (acc < 70) severity = "error";
-      else if (acc < 90) severity = "warning";
-      result = `The best prediction is ${objectsBbox[0].bestLabel} with ${objectsBbox[0].accuracy}%`;
-    }
-    return <Paper elevation={3}><Alert sx={{fontWeight:900,fontSize:"20px"}} variant="filled" severity={severity}>{result}</Alert></Paper>;
-  };
-
   return <div className="HandWritingPredictor">
-    <ThemeProvider theme={lightTheme}>
-
         <Paper style={{width: 600,padding: 16}} elevation={8}>
 
           <Stack spacing={2}>
             <Stack spacing={2} direction='row' alignItems='flex-start'>
               <CanvasPaint ref={canvasInputRef}
-                          width={canvasSize.width*canvasInputRatio}
-                          height={canvasSize.height*canvasInputRatio}></CanvasPaint>
+                           width={imageParams.width*imageParams.inputScale}
+                           height={imageParams.height*imageParams.inputScale}/>
 
               <Stack spacing={2}>
                 <canvas ref={canvasOutputRef} className="HandWritingPredictor-canvas-output"
-                        width={canvasSize.width} height={canvasSize.height}
-                        style={{ width:canvasSize.width*canvasOutputRatio,
-                                height:canvasSize.height*canvasOutputRatio }}></canvas>
+                        width={imageParams.width}
+                        height={imageParams.height}
+                        style={{ width:imageParams.width*imageParams.outputScale,
+                                 height:imageParams.height*imageParams.outputScale }}/>
 
-                <TextField
-                  label="Image to fill the canvas"
-                  onChange={(event) => setUrlImage(event.target.value)}
-                  variant='outlined'
-                  size="small"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="end">
-                        <PhotoCameraIcon/>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
+                <MuiTextFieldImageURL onChange={(ev) => {
+                    copyURLtoCanvas(canvasInputRef.current, ev.target.value)}}/>
               </Stack>
-
             </Stack>
 
             <Stack spacing={2}  direction='row'>
-              <MuiButton onClick={handleClickRender} color='primary' variant='contained' size='large' text="Predict"/>
-              {ShowResult()}
+              <RenderButton onClick={handleClickRender}/>
+              <ShowResult objectsBbox={objectsBbox}/>
             </Stack>
 
           </Stack>
-
         </Paper>
-
-
-
-      </ThemeProvider>
   </div>
-  
 }
 
 

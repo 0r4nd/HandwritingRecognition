@@ -4,8 +4,9 @@
     padding: 4rem;
     font-family: system-ui;
 }
-  
+
 .HandWritingPredictor-button {
+    text-align: center;
     background-color: rgb(80, 143, 198);
     color: white;
     font-size: 20px;
@@ -15,8 +16,10 @@
     cursor: pointer;
     width: 200px;
     height: 100px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
 }
-  
+
+
 .HandWritingPredictor-canvas-output {
     /*width: 280px;*/
     /*height: 280px;*/
