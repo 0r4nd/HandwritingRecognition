@@ -111,6 +111,34 @@ function copyURLtoCanvas(canvas, url) {
   };
   img.src = url;
 }
+function drawRectToCanvas(canvas, normalizedPoints, text) {
+  var ctx = canvas.getContext("2d");
+  var x = normalizedPoints[0] * canvas.width;
+  var y = normalizedPoints[1] * canvas.height;
+  var width = normalizedPoints[2] * canvas.width - x;
+  var height = normalizedPoints[3] * canvas.height - y;
+  ctx.beginPath();
+  ctx.rect(x,y,width,height);
+  ctx.strokeStyle = "red";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  if (typeof(text) !== 'undefined') {
+    ctx.font = '24px Comic Sans MS';
+    var textWidth = ctx.measureText(text).width + 5;
+    // header
+    ctx.beginPath();
+    ctx.strokeStyle = "red";
+    ctx.fillStyle = "red";
+    ctx.fillRect(x,y-30,textWidth,30);
+    ctx.rect(x,y-30,textWidth,30);
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    // text
+    ctx.fillStyle = "black";
+    ctx.fillText(text, x+5,y-5);
+  }
+}
 
 
 /***********************************************************************/
@@ -176,12 +204,16 @@ export default function HandWritingPredictor({modelURL=''}) {
     objectsBboxCopy = [];
     objectsBboxCopy.push({
       bestLabel: pred.bestLabel,
-      bbox: pred.predict[1].map(a => a*imageParams.width),
+      bbox: pred.predict[1]/*.map((a,i) => a*imageParams[(i%2)?'height':'width'])*/,
       accuracy: toFixed(pred.predict[0][pred.bestId]*100),
     });
     setObjectsBbox(objectsBboxCopy);
-    console.log(Array.from(pred.predict[0])/*.map(a => toFixed(a))*/)
+    console.log(Array.from(pred.predict[0])/*.map(a => toFixed(a))*/);
     console.log(objectsBbox, objectsBboxCopy);
+    console.warn(objectsBboxCopy[0].bbox)
+    
+    drawRectToCanvas(canvasInput, objectsBboxCopy[0].bbox,
+                     `${objectsBboxCopy[0].bestLabel}: ${objectsBboxCopy[0].accuracy|0}%`);
   };
 
 
