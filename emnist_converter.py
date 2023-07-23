@@ -544,6 +544,11 @@ class ObjectDetectionGenerator:
 
 
 if __name__ == '__main__':
+    path_ = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+    dataset_dir = os.path.join(path_, "datasets")
+    model_dir = os.path.join(path_, "models")
+    dataset_dir_url = "https://github.com/0r4nd/HandwritingRecognition/blob/main/datasets"
+
     (X_train, y_train), (X_test, y_test), y_mapping = emnist_load_data(os.path.join("datasets","emnist-balanced"), True)
 
     # convert target[0] to categorical
@@ -576,3 +581,23 @@ if __name__ == '__main__':
     print("y_test_bbox:", y_test[1].shape)
     print("\nMapping:")
     print(y_mapping)
+
+    og = ObjectDetectionGenerator(X_train, y_train, X_test, y_test,
+                                  dataset_dir, dataset_dir_url,
+                                  layers_width=256,layers_height=128)
+
+
+    mul = 1/100 # use 1% of dataset
+
+    print("Generate layers with only 1 object on each:")
+    for i in range(int(len(og.objects["X_train"])*mul)):
+        og.add_layer("train")
+        og.layer_draw_random_object("train", i, i)
+    og.load_layers("train")
+    og.reset_layers()
+
+    for i in range(int(len(og.objects["X_test"])*mul)):
+        og.add_layer("test")
+        og.layer_draw_random_object("test", i, i)
+    og.load_layers("test")
+    og.reset_layers()
