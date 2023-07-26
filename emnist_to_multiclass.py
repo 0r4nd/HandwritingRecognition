@@ -56,12 +56,12 @@ class ObjectDetectionGenerator:
     def __init__(self, X_train, y_train, X_test, y_test,
                  dir_path, dir_path_url, labels=[],
                  layers_width=300, layers_height=300,
-                 random_state=1, test_size=0.25):
+                 random_state=1, test_size=0.25, num_classes=10):
         self.random_state = random_state
         self.layers_width = layers_width
         self.layers_height = layers_height
         self.labels = labels
-        self.max_object_count = 10 # max objects per layer
+        self.num_classes = num_classes # max objects per layer
 
         self.objects = {
             "X_train": X_train, "y_train_id": y_train, "y_train_bbox": [],
@@ -299,8 +299,8 @@ class ObjectDetectionGenerator:
         height = self.layers_height
         width = self.layers_width
         return (np.zeros((dim, height, width, 1), dtype="float32"),
-                np.full((dim, self.max_object_count), -1, dtype="int8"), # id
-                np.zeros((dim, self.max_object_count, 4), dtype="int16")) # bbox
+                np.full((dim, self.num_classes), -1, dtype="int8"), # id
+                np.zeros((dim, self.num_classes, 4), dtype="int16")) # bbox
 
     def append_X_y(self, X_set, y_set_id, y_set_bbox):
         arrays = self.set_X_y(1)
@@ -584,7 +584,8 @@ if __name__ == '__main__':
 
     og = ObjectDetectionGenerator(X_train, y_train, X_test, y_test,
                                   dataset_dir, dataset_dir_url,
-                                  layers_width=256,layers_height=128)
+                                  layers_width=256,layers_height=128,
+                                  num_classes=num_classes)
 
 
     mul = 1/100 # use 1% of dataset
